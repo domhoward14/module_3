@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1436750137 source:c:\users\eric\cop 3402 projects\module_3\parser_generator.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+
