@@ -1,6 +1,18 @@
 # depslib dependency file v1.0
-1436750137 source:c:\users\eric\cop 3402 projects\module_3\parser_generator.c
+1436830206 source:c:\users\eric\cop 3402 projects\module_3\parser_generator.c
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
+	"ArrayList.c"
+	"module_1.h"
+
+1434046479 c:\users\eric\cop 3402 projects\module_3\arraylist.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"ArrayList.h"
+
+1433747839 c:\users\eric\cop 3402 projects\module_3\arraylist.h
+
+1436819060 c:\users\eric\cop 3402 projects\module_3\module_1.h
 
