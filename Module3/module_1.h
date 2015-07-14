@@ -42,6 +42,7 @@ void format2();
 void stackPrint();
 void format ();
 void errorCheck();
+void printLexemeList();
 void  cleanArrayList();
 void load1();
 int isSymbol2(int x);

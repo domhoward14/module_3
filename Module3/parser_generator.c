@@ -164,12 +164,11 @@ void program2()
     initEmit();
     getToken();
     block();
-    if (token.sym != periodsym)
-        getError(0);
+   // if (token.sym != periodsym)
+      //  getError(0);
     emit(9, 0, 2);
     printOut();
     closeEmit();
-    printf("The program is syntactically correct.");
 }
 
 void block()
@@ -1198,6 +1197,7 @@ void project1()
     findToken();
     //errorCheck();
     printLexemeTable();
+    printLexemeList();
     printTest();
 }
 
@@ -1703,4 +1703,5 @@ void errorCheck()
     char letter;
 
 }
+void printLexemeOutput()
 
