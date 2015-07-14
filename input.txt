@@ -3,4 +3,6 @@ var x, y;
 begin 
   y := 3; 
   x := y + 56;
+if x > y
+then x := 3;
 end.

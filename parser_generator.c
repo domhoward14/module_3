@@ -134,6 +134,7 @@ void printOut()
     while(i < codeSpot)
     {
         printf("%d\t%d\t%d\n",code3[(i *3)], code3[(i *3) + 1], code3[(i *3) + 2]);
+        fprintf(emitWriter, "%d %d %d \n", code3[(i *3)], code3[(i *3) + 1], code3[(i *3) + 2]);
         i++;
     }
 }
@@ -166,9 +167,8 @@ void program2()
     if (token.sym != periodsym)
         getError(0);
     emit(9, 0, 2);
-    closeEmit();
     printOut();
-
+    closeEmit();
 }
 
 void block()
@@ -270,8 +270,8 @@ void statement(int varCount)
         getError(5);
     getToken();
     expression();
-    emit(4, 0, localSymbolHolder.addr);
     enter(var,localSymbolHolder.name,0,0,getTop());
+    emit(4, 0, localSymbolHolder.addr);
     printf("\n\nThe TOS IS %d\n\n", getTop());
     }
     else if(token.sym == callsym)
@@ -506,7 +506,6 @@ void emit(int op, int l, int m)
     code3[(codeSpot * 3) + 1] = l;
     code3[(codeSpot * 3) + 2] = m;
     codeSpot ++;
-    fprintf(emitWriter, "%d %d %d \n", op, l, m);
     printf("%d %d %d \n", op, l, m);
 }
 
@@ -924,7 +923,7 @@ void jmp (int jumpSpot)
 
 void jpc (int jumpSpot)
 {
-    if (stack[sp] == 1)
+    if (stack[sp] == 0)
         pc = jumpSpot;
     sp --;
 }
