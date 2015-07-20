@@ -1,6 +1,5 @@
 var x, y;
 begin
-x := (y + 56;
-if x < y
-x = 4;
+x := y + 56;
+x := 4;
 end.

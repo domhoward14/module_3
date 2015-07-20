@@ -87,19 +87,4 @@ int getSymbolValue(char *name);
 int getTop();
 int isSymbol(char *name);
 void printOut();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif /* MODULE_1_H_INCLUDED*/
