@@ -11,6 +11,8 @@
 #define MAX_CODE_LENGTH 500
 #define MAX_LEXI_LEVELS 3
 #define NEXT_INSTRUCTION 3
+#define ON 1
+#define OFF 0
 
 enum symbols
 {
@@ -64,8 +66,16 @@ const char *errors[30] =
 	//#10
 	"some factor symbol is expected",
 	//#11
-	"Variable has not been previously declared"
+	"Variable has not been previously declared",
+	//12
+	"Too many inputs given",
+	//13
+	"Invalid agruement given"
 };
+
+int aFlag = 0;
+int lFlag = 0;
+int vFlag = 0;
 
 FILE *lexemeTableFile;
 FILE *emitWriter;
@@ -115,25 +125,47 @@ FILE *output;
 char *opString;
 struct Instruction ir;
 
-int main()
+int main(int argc,char *argv[])
 {
+    setFlags(argc, argv);
+    if(argc > 4)
+        getError(12);
     project1();
     program2();
     project3();
-    return 0;
 }
+void setFlags(int argc, char *argv [])
+{
+    int i = 1;
+    while(i < argc)
+    {
+        if(!strcmp(argv[i], "-a"))
+        {
+            aFlag = ON;
+            //printf("Aflag = %d\n", aFlag);
+        }
+        else if(!strcmp(argv[i], "-l"))
+        {
+            lFlag = ON;
+            //printf("Lflag = %d\n", lFlag);
+        }
+        else if(!strcmp(argv[i], "-v"))
+        {
+            vFlag = ON;
+            //printf("Vflag = %d\n", vFlag);
+        }
+        else
+            getError(13);
+        i ++;
+    }
+}
+
 // THE START OF MOD3 CODE
 void printOut()
 {
-    printf("\nOUTPUT :");
-    printf("\n");
-    printf("OP\t");
-    printf("L\t");
-    printf("M\n");
     int i =0;
     while(i < codeSpot)
     {
-        printf("%d\t%d\t%d\n",code3[(i *3)], code3[(i *3) + 1], code3[(i *3) + 2]);
         fprintf(emitWriter, "%d %d %d \n", code3[(i *3)], code3[(i *3) + 1], code3[(i *3) + 2]);
         i++;
     }
@@ -670,7 +702,6 @@ void project3()
         fetch();
         execute();
     }
-
 }
 
 
@@ -725,6 +756,10 @@ void fetch ()
 
 void format2()
 {
+    if(vFlag)
+        printf("\t\t\t\tpc\t\tbp\tsp\tstack\n");
+    if(vFlag)
+        printf("Initial Values\t\t\t0\t\t1\t0\n");
     fprintf(output, "\t\t\t\tpc\t\tbp\tsp\tstack\n");
     fprintf(output, "Initial Values\t\t\t0\t\t1\t0\n");
 
@@ -739,10 +774,13 @@ void getInstruction()
     ir.m =  code[pc * NEXT_INSTRUCTION + 2];
     opString = getOpString(ir.op);
     fprintf(output, "%d\t%s\t%d\t%d", pc, opString, ir.l, ir.m );
+    if(vFlag)
+        printf("%d\t%s\t%d\t%d", pc, opString, ir.l, ir.m );
 }
 
 char *getOpString(int op)
 {
+    //printf("The opcode is %d\n", op);
     switch (op)
         {
         //lit
@@ -850,6 +888,8 @@ void execute()
         //print pc, bp, sp
         //use loop to print stack
         fprintf(output, "\t%d\t\t%d\t%d\t", pc, bp, sp);
+        if(vFlag)
+            printf("\t%d\t\t%d\t%d\t", pc, bp, sp);
         stackPrint();
 }
 //initializes the stack and code arrays.
@@ -880,7 +920,15 @@ void lit (int pushValue)
 
 void testFunction()
 {
-    printf(" the very last number should be 3? = %d", code[50]);
+    printf("lexeme\t");
+    printf("tokentype\n");
+    int i = 0;
+    while(i < tokenArrayCount)
+    {
+        printf("%s\t", tokenArray[i].word);
+        printf("%d\n", tokenArray[i].sym);
+        i ++;
+    }
 }
 
 //lod function will do 3 things
@@ -949,12 +997,12 @@ void sio2()
 void sio3()
 {
     fprintf(output, "\t%d\t\t%d\t%d\t", pc, bp, sp);
-    stackPrint();
-    exit(0);
+    done();
 }
 
 void stackPrint()
 {
+    printOutStack();
     if(lexiLevel == 1)
     {
         for(int i = 1; i <= sp; i ++)
@@ -1377,14 +1425,6 @@ void findToken()
                     getter ++;
             }
     }
-    int i = 0;
-    printf("CLEAN INPUT :\n");
-    while(i < tokenArrayCount)
-    {
-        printf("%s\t", tokenArray[i].word);
-        printf("%d\n", tokenArray[i].sym);
-        i ++;
-    }
 }
 int isLetter(char letter)
 {
@@ -1702,5 +1742,95 @@ void errorCheck()
     char *word;
     char letter;
 
+}
+
+void printOutLexemeTable()
+{
+    int i = 0;
+    printf("CLEAN INPUT :\n");
+    while(i < tokenArrayCount)
+    {
+        printf("%s\t", tokenArray[i].word);
+        printf("%d\n", tokenArray[i].sym);
+        i ++;
+    }
+}
+
+void printOutLexemeList()
+{
+    int i = 0;
+    printf("\nLEXEME LIST :\n ");
+    while(i < tokenArrayCount)
+    {
+        printf("%d ", tokenArray[i].sym);
+        if(tokenArray[i].sym == 3 || tokenArray[i].sym == 2)
+            printf("%s ", tokenArray[i].word);
+        i ++;
+    }
+}
+
+
+void done()
+{
+    //if(argv[1] == "l")
+    //the -a option
+    if(aFlag)
+        printOutMcode();
+    if(lFlag)
+        printOutLexemeList();
+    //printOutStack();
+    exit(0);
+}
+
+void printOutStack()
+{
+   if(vFlag)
+   {
+        if(lexiLevel == 1)
+    {
+        for(int i = 1; i <= sp; i ++)
+            printf("%d ", stack[i]);
+        printf("\n");
+
+    }
+    else if(lexiLevel == 2)
+    {
+        for(int i = 1; i <= sp; i ++)
+        {
+            if(i == bp)
+                printf("| ");
+            printf("%d ", stack[i]);
+
+        }
+        printf("\n");
+    }
+    else
+    {
+       int base = getBase(1, bp);
+       for(int i = 1; i <= sp; i ++)
+        {
+            if(i == bp || base)
+                printf("| ");
+            printf("%d ", stack[i]);
+
+        }
+        printf("\n");
+    }
+   }
+}
+
+void printOutMcode()
+{
+    int i =0;
+    printf("\n\nOUTPUT :");
+    printf("\n");
+    printf("OP\t");
+    printf("L\t");
+    printf("M\n");
+    while(i < codeSpot)
+    {
+        printf("%d\t%d\t%d\n",code3[(i *3)], code3[(i *3) + 1], code3[(i *3) + 2]);
+        i++;
+    }
 }
 
