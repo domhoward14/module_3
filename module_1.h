@@ -50,6 +50,7 @@ int isEnd();
 void skipComment();
 void printTest();
 void project1();
+int doOperation(int x, int y, int operation);
 void printOutMcode();
 void setFlags();
 void load3();

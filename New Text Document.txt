@@ -27,6 +27,17 @@ y	2
 3	3
 then	24
 x       2
+
+var x, y;
+begin
+y := 4;
+x := 56 + 4;
+if y >= x then 
+x := 4;
+end;
+end.
+
+
 :=      20
 y       2
 +       4

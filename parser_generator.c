@@ -70,7 +70,11 @@ const char *errors[30] =
 	//12
 	"Too many inputs given",
 	//13
-	"Invalid agruement given"
+	"Invalid agruement given",
+	//14
+	"Invalid operational symbol given",
+	//15
+	"cant divide 0 by 0"
 };
 
 int aFlag = 0;
@@ -88,6 +92,7 @@ int symbolretriever;
 int symbolTableSize = 0;
 int codeSpot = 0;
 int code3 [3000];
+int level = -1;
 
 //THE START OF MOD2 CODE
 char buffer[256];
@@ -111,7 +116,7 @@ struct Instruction
     int m;
 };
 
-int lexiLevel = 0;
+int lexiLevel = -1;
 int partition = 0;
 int codeSize = 0;
 int buffer1 = 0;
@@ -195,8 +200,9 @@ void program2()
     load();
     initEmit();
     getToken();
+    lexiLevel ++;
     block();
-    if (token.sym != periodsym)
+    if (token.sym != periodsym && token.sym != semicolonsym )
         getError(0);
     emit(9, 0, 2);
     printOut();
@@ -206,6 +212,7 @@ void program2()
 
 void block()
 {
+    int tempCodeSpot = 0;
     int varCount = 0;
     //constant symbol function
     if (token.sym ==  constsym)
@@ -222,7 +229,7 @@ void block()
             getToken();
             if(token.sym != numbersym)
                 getError(3);
-            enter(cons, symbolHolder.name, 0, 0, token.value);
+            enter(cons, symbolHolder.name, lexiLevel, 0, token.value);
             getToken();
         }
         while (token.sym == commasym);
@@ -240,7 +247,7 @@ void block()
            getToken();
            if(token.sym != identsym)
                 getError(1);
-            enter(var, token.word, 0, 4 + varCount, 0);
+            enter(var, token.word, lexiLevel, 4 + varCount, 0);
             varCount ++;
            getToken();
         }
@@ -251,12 +258,14 @@ void block()
     }
     if(token.sym == procsym)
     {
+        lexiLevel ++;
+        printf("The current level is at %d", lexiLevel);
         do
         {
             getToken();
             if(token.sym != identsym)
                 getError(1);
-            enter(proc, token.word, 0, codeSpot, token.sym);
+            enter(proc, token.word, lexiLevel, codeSpot, token.sym);
             getToken();
             if(token.sym != semicolonsym)
                 getError(4);
@@ -265,6 +274,15 @@ void block()
             if(token.sym != semicolonsym)
                 getError(4);
             getToken();
+            tempCodeSpot = codeSpot;
+            emit(7, 0, 0);
+            printf("\n the level currently is %d:\n", lexiLevel);
+            block();
+            emit(2, 0, 0);
+            code3[(tempCodeSpot * 3) + 2] = codeSpot;
+            if(token.sym != semicolonsym && token.sym != periodsym)
+                getError(4);
+            lexiLevel --;
         }
         while(token.sym == procsym);
     }
@@ -274,8 +292,78 @@ void block()
 void getToken()
 {
     token = tokenList[tokenSpot];
-    //printf("This token being read is %s\n", token.word);
+    printf("This token being read is %s\n", token.word);
     tokenSpot ++;
+}
+
+int getAssignment ()
+{
+    int mover = tokenSpot - 1;
+    int endPoint = mover;
+    int answer = 0;
+    int x, y, operation;
+
+    while (tokenList[mover].sym != becomessym)
+        mover --;
+    mover ++;
+    while(mover < endPoint)
+    {
+        printf("\nThe current answer is %d", answer);
+
+        if(tokenList[mover].sym == identsym){
+                 printf("\n The operation is %d and the variables are x-> %d , y -> %d \n", plussym, answer, tokenList[mover].value);
+            answer = doOperation(answer, tokenList[mover].value, plussym);
+
+        }
+        else if(tokenList[mover].sym == numbersym){
+                        printf("\n The operation is %d and the variables are x-> %d , y -> %d \n", plussym, answer, atoi(tokenList[mover].word));
+
+            answer = doOperation(answer, atoi(tokenList[mover].word), plussym);
+        }
+        else
+        {
+            printf("\n The current operation is %s\n", tokenList[mover].word);
+            operation = tokenList[mover].sym;
+            mover ++;
+            if(tokenList[mover].sym == identsym){
+                                    printf("\n The operation is %d and the variables are x-> %d , y -> %d \n", operation, answer, symbol_table[getSymbol(tokenList[mover].word)].val);
+
+                answer = doOperation(answer, symbol_table[getSymbol(tokenList[mover].word)].val, operation);
+            }
+            else if (tokenList[mover].sym == numbersym)
+                {
+                                    printf("\n The operation is %d and the variables are x-> %d , y -> %d \n", operation, answer, atoi(tokenList[mover].word));
+
+                answer = doOperation(answer, atoi(tokenList[mover].word), operation);
+            }
+        }
+        mover ++;
+    }
+    printf("The answer is : %d", answer);
+    return answer;
+}
+
+int doOperation(int x, int y, int operation)
+{
+    switch(operation)
+    {
+        case plussym:
+            printf("\n Adding x -> %d + y -> %d = %d\n", x, y, x + y);
+            return x + y;
+        case minussym:
+            printf("\n subtracting x -> %d + y -> %d = %d\n", x, y, x - y);
+            return x - y;
+        case slashsym:
+            printf("\n dividing x -> %d + y -> %d = %d\n", x, y, x / y);
+            if(x == 0 && y == 0)
+        getError(15);
+            return x / y;
+        case multsym:
+            printf("\n multiplying x -> %d + y -> %d = %d\n", x, y, x * y);
+            return x * y;
+        default:
+            getError(14);
+    }
 }
 
 void getError(int error)
@@ -303,7 +391,7 @@ void statement(int varCount)
         getError(5);
     getToken();
     expression();
-    enter(var,localSymbolHolder.name,0,0,getTop());
+    enter(var,localSymbolHolder.name,lexiLevel,0,getAssignment());
     emit(4, 0, localSymbolHolder.addr);
    // printf("\n\nThe TOS IS %d\n\n", getTop());
     }
@@ -313,6 +401,7 @@ void statement(int varCount)
         if(token.sym != identsym)
             getError(2);
         getToken();
+        emit(5, lexiLevel, symbol_table[getSymbol(token.word)].addr);
     }
     else if(token.sym == beginsym)
     {
@@ -322,6 +411,8 @@ void statement(int varCount)
         while(token.sym == semicolonsym)
         {
             getToken();
+            if(token.sym == elsesym)
+                getToken();
             statement(localVarCount);
         }
         if(token.sym != endsym)
@@ -345,6 +436,20 @@ void statement(int varCount)
             getError(7);
         getToken();
         statement(localVarCount);
+    }
+    else if(token.sym == readsym)
+    {
+        getToken();
+        emit(9, 0, 1);
+        emit(4, symbol_table[getSymbol(token.word)].level,symbol_table[getSymbol(token.word)].addr);
+        getToken();
+    }
+    else if(token.sym == writesym)
+    {
+        getToken();
+        emit(3, symbol_table[getSymbol(token.word)].level,symbol_table[getSymbol(token.word)].addr);
+        emit(9, 0, 0);
+        getToken();
     }
    // printf("\n\nThe change spot and codespot  is: %d, %d\n\n", changeSpot, codeSpot);
     if(changeSpot != 0)
@@ -457,8 +562,11 @@ void factor ()
         getToken();
     }
     else
-        getError(10);
-
+    {
+        if(token.sym != eqlsym)
+            getError(10);
+        getToken();
+    }
 }
 
 int writeRelation(int opSym)
@@ -563,7 +671,7 @@ void enter(int kind, char *name, int l, int m, int val)
     tempSymbolHolder.level = l;
     tempSymbolHolder.addr = m;
     tempSymbolHolder.val = val;
-    //printf("The name that is being inputed is : %s", tempSymbolHolder.name);
+    //printf("\nThe name and value that is being inputed is : %s = %d", tempSymbolHolder.name, val);
     if(isInTable(tempSymbolHolder.name) == 0)
     {
         symbol_table[symbolSpot] = tempSymbolHolder;
@@ -575,8 +683,9 @@ void enter(int kind, char *name, int l, int m, int val)
     //update value if already in the table
     else
     {
+        printf("\nThe name and value that is being inputed is : %s = %d\n", tempSymbolHolder.name, val);
         symbol_table[getSymbol(name)].val = val;
-       // printf(" It is working for symbol %s and The value of the symbol is : %d\n", symbol_table[getSymbol(name)].name, symbol_table[getSymbol(name)].val);
+        printf(" It is working for symbol %s and The value of the symbol is : %d\n", symbol_table[getSymbol(name)].name, symbol_table[getSymbol(name)].val);
     }
 }
 
@@ -1008,7 +1117,6 @@ void stackPrint()
         for(int i = 1; i <= sp; i ++)
             fprintf(output, "%d ", stack[i]);
         fprintf(output, "\n");
-
     }
     else if(lexiLevel == 2)
     {
@@ -1017,7 +1125,6 @@ void stackPrint()
             if(i == bp)
                 fprintf(output, "| ");
             fprintf(output, "%d ", stack[i]);
-
         }
         fprintf(output, "\n");
     }
@@ -1262,9 +1369,8 @@ void load1()
         printf("Error in opening the file.");
         exit(0);
     }
-    while (isEnd() != 1)
+    while ((x = fgetc(codeFile)) != EOF)
     {
-        x = fgetc(codeFile);
         //printf("%d", codeCount);
         //printf("this iteration of x is %c \n", x);
         char tempString [256];
@@ -1302,8 +1408,8 @@ void load1()
         prev = x;
         //printf("%d\n", codeCount);
     }
-    put(codeArray, "end");
-    put(codeArray, ".");
+    //put(codeArray, "end");
+    //put(codeArray, ".");
     //printArrayList(codeArray);
     fclose(codeFile);
 
@@ -1330,7 +1436,6 @@ void printCleanInput()
         temp = tempString[0];
        if((tempString = get(codeArray, i)) == "\n")
             fprintf(output, "\n");
-        if(temp != 47)
             fprintf(output, "%s", tempString);
         i ++;
     }
@@ -1381,7 +1486,7 @@ void cleanArrayList()
     {
         tempString = get(codeArray, i);
         temp = tempString[0];
-        if(temp == 0 || temp == 10 || temp == 47 || temp == 9 || temp == 11 || temp == 32)
+        if(temp == 0 || temp == 10 || temp == 9 || temp == 11 || temp == 32)
         {
             removeElement(codeArray,i);
             i --;
@@ -1578,6 +1683,7 @@ int isNumber(char *string)
 
 int symbolSwitch(char *string)
 {
+    //printf("The current symbol is : %s\n", string);
     char symbol = string[0];
     switch(symbol)
     {
@@ -1689,6 +1795,7 @@ void printLexemeTable()
     int i = 0;
     while(i < tokenArrayCount)
     {
+        printf("%s\t", tokenArray[i].word);
         fprintf(lexemeTable, "%s\t", tokenArray[i].word);
         fprintf(lexemeTable, "%d\n", tokenArray[i].sym);
         i ++;
@@ -1721,7 +1828,9 @@ void printLexemeList()
 
 int isNextEqual()
 {
-    char *string = get(codeArray, structIndex + 1);
+    char *string = get(codeArray, getter + 1);
+    //printf("\nThe current and next symbol is : %s, %s\n", get(codeArray, getter), get(codeArray, getter + 1));
+    get(codeArray, getter);
     if(string[0] == '=')
         return 1;
     return 0;
@@ -1729,7 +1838,7 @@ int isNextEqual()
 
 int isNextGts()
 {
-    char *string = get(codeArray, structIndex + 1);
+    char *string = get(codeArray, getter + 1);
     if(string[0] == '>')
         return 1;
     return 0;
